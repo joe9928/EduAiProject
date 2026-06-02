@@ -1,0 +1,471 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+// ============ ENUMS ============
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMINISTRATOR
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonType {
+  VIDEO
+  PDF
+  TEXT
+  EXTERNAL_LINK
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+  RETURNED
+  LATE
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+  TRUE_FALSE
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  ABANDONED
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  APPROVED
+}
+
+enum NotificationType {
+  ASSIGNMENT_DUE
+  GRADE_POSTED
+  RISK_ALERT
+  INACTIVITY
+  QUIZ_READY
+  SECURITY_ALERT
+  DISCUSSION_REPLY
+  SYSTEM
+}
+
+enum RecommendationType {
+  WEAK_TOPIC_REVISION
+  PRACTICE_QUIZ
+  MISSED_CONTENT
+  UPCOMING_DEADLINE
+  PEER_DISCUSSION
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ActivityType {
+  LESSON_VIEWED
+  LESSON_COMPLETED
+  QUIZ_STARTED
+  QUIZ_SUBMITTED
+  ASSIGNMENT_SUBMITTED
+  DISCUSSION_POSTED
+  LOGIN
+  LOGOUT
+}
+
+// ============ MODELS ============
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  role            Role      @default(STUDENT)
+  isActive        Boolean   @default(true)
+  profileImageUrl String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  refreshTokens   RefreshToken[]
+  enrollments     Enrollment[]
+  submissions     Submission[]
+  quizAttempts    QuizAttempt[]
+  notifications   Notification[]
+  recommendations Recommendation[]
+  riskProfiles    RiskProfile[]
+  activityEvents  ActivityEvent[]
+  auditLogs       AuditLog[]
+  lessonProgress  LessonProgress[]
+
+  lecturerCourses    Course[]          @relation("LecturerCourses")
+  discussionThreads  DiscussionThread[]
+  discussionPosts    DiscussionPost[]
+  quizGenerationJobs QuizGenerationJob[]
+
+  @@index([role])
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  tokenHash   String    @unique
+  familyId    String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Course {
+  id            String       @id @default(uuid())
+  title         String
+  description   String?
+  coverImageUrl String?
+  status        CourseStatus @default(DRAFT)
+  lecturerId    String
+  lecturer      User         @relation("LecturerCourses", fields: [lecturerId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  enrollments  Enrollment[]
+  modules      CourseModule[]
+  assignments  Assignment[]
+  quizzes      Quiz[]
+  riskProfiles RiskProfile[]
+  threads      DiscussionThread[]
+  activityEvents ActivityEvent[]
+
+  @@index([lecturerId, status])
+}
+
+model Enrollment {
+  id          String    @id @default(uuid())
+  studentId   String
+  courseId    String
+  student     User      @relation(fields: [studentId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id])
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([studentId, courseId])
+}
+
+model CourseModule {
+  id          String    @id @default(uuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+  title       String
+  description String?
+  order       Int
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lessons Lesson[]
+
+  @@index([courseId, order])
+}
+
+model Lesson {
+  id          String       @id @default(uuid())
+  moduleId    String
+  module      CourseModule @relation(fields: [moduleId], references: [id])
+  title       String
+  type        LessonType
+  contentUrl  String?
+  contentText String?
+  durationMin Int?
+  order       Int
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  progress LessonProgress[]
+
+  @@index([moduleId, order])
+}
+
+model LessonProgress {
+  id           String   @id @default(uuid())
+  userId       String
+  lessonId     String
+  user         User     @relation(fields: [userId], references: [id])
+  lesson       Lesson   @relation(fields: [lessonId], references: [id])
+  completed    Boolean  @default(false)
+  lastViewedAt DateTime @default(now())
+  timeSpentSec Int      @default(0)
+
+  @@unique([userId, lessonId])
+}
+
+model Assignment {
+  id          String    @id @default(uuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+  title       String
+  description String
+  dueDate     DateTime
+  maxScore    Int       @default(100)
+  allowLate   Boolean   @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  submissions Submission[]
+
+  @@index([courseId, dueDate])
+}
+
+model Submission {
+  id           String           @id @default(uuid())
+  assignmentId String
+  studentId    String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id])
+  student      User             @relation(fields: [studentId], references: [id])
+  fileUrl      String?
+  textContent  String?
+  status       SubmissionStatus @default(SUBMITTED)
+  score        Int?
+  feedback     String?
+  gradedAt     DateTime?
+  gradedById   String?
+  submittedAt  DateTime         @default(now())
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId, status])
+}
+
+model Quiz {
+  id           String     @id @default(uuid())
+  courseId     String
+  course       Course     @relation(fields: [courseId], references: [id])
+  title        String
+  description  String?
+  timeLimitMin Int?
+  maxAttempts  Int        @default(1)
+  passingScore Int        @default(50)
+  status       QuizStatus @default(DRAFT)
+  aiGenerated  Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([courseId, status])
+}
+
+model QuizQuestion {
+  id            String       @id @default(uuid())
+  quizId        String
+  quiz          Quiz         @relation(fields: [quizId], references: [id])
+  type          QuestionType
+  text          String
+  options       Json?
+  correctAnswer String?
+  explanation   String?
+  points        Int          @default(1)
+  order         Int
+
+  answers QuizAnswer[]
+
+  @@index([quizId, order])
+}
+
+model QuizAttempt {
+  id          String        @id @default(uuid())
+  quizId      String
+  studentId   String
+  quiz        Quiz          @relation(fields: [quizId], references: [id])
+  student     User          @relation(fields: [studentId], references: [id])
+  status      AttemptStatus @default(IN_PROGRESS)
+  startedAt   DateTime      @default(now())
+  submittedAt DateTime?
+  score       Int?
+  totalPoints Int?
+
+  answers QuizAnswer[]
+
+  @@index([quizId, studentId])
+}
+
+model QuizAnswer {
+  id             String       @id @default(uuid())
+  attemptId      String
+  questionId     String
+  attempt        QuizAttempt  @relation(fields: [attemptId], references: [id])
+  question       QuizQuestion @relation(fields: [questionId], references: [id])
+  selectedOption String?
+  textAnswer     String?
+  isCorrect      Boolean?
+  pointsAwarded  Int?
+
+  @@unique([attemptId, questionId])
+}
+
+model QuizGenerationJob {
+  id                 String    @id @default(uuid())
+  lecturerId         String
+  lecturer           User      @relation(fields: [lecturerId], references: [id])
+  courseId           String?
+  sourceFileUrl      String
+  sourceFileName     String
+  questionCount      Int       @default(10)
+  questionTypes      Json
+  status             JobStatus @default(PENDING)
+  generatedQuestions Json?
+  errorMessage       String?
+  tokensUsed         Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  approvedAt         DateTime?
+  quizId             String?
+
+  @@index([lecturerId, status])
+}
+
+model DiscussionThread {
+  id        String   @id @default(uuid())
+  courseId  String
+  authorId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+  title     String
+  body      String
+  isPinned  Boolean  @default(false)
+  isLocked  Boolean  @default(false)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts DiscussionPost[]
+
+  @@index([courseId, createdAt])
+}
+
+model DiscussionPost {
+  id        String           @id @default(uuid())
+  threadId  String
+  authorId  String
+  thread    DiscussionThread @relation(fields: [threadId], references: [id])
+  author    User             @relation(fields: [authorId], references: [id])
+  body      String
+  parentId  String?
+  deletedAt DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  metadata  Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+model Recommendation {
+  id           String             @id @default(uuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id])
+  type         RecommendationType
+  resourceType String
+  resourceId   String
+  reason       String
+  score        Float
+  isDismissed  Boolean            @default(false)
+  isActedOn    Boolean            @default(false)
+  generatedAt  DateTime           @default(now())
+  expiresAt    DateTime
+
+  @@index([userId, isDismissed, expiresAt])
+}
+
+model RiskProfile {
+  id           String    @id @default(uuid())
+  userId       String
+  courseId     String
+  user         User      @relation(fields: [userId], references: [id])
+  course       Course    @relation(fields: [courseId], references: [id])
+  riskScore    Float
+  level        RiskLevel
+  factors      Json
+  calculatedAt DateTime  @default(now())
+  alertSentAt  DateTime?
+
+  @@unique([userId, courseId])
+  @@index([level, calculatedAt])
+}
+
+model ActivityEvent {
+  id         String       @id @default(uuid())
+  userId     String
+  courseId   String?
+  user       User         @relation(fields: [userId], references: [id])
+  course     Course?      @relation(fields: [courseId], references: [id])
+  type       ActivityType
+  resourceId String?
+  metadata   Json?
+  occurredAt DateTime     @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([courseId, type, occurredAt])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  actorId       String?
+  actor         User?    @relation(fields: [actorId], references: [id])
+  action        String
+  targetType    String
+  targetId      String
+  previousState Json?
+  newState      Json?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+}
