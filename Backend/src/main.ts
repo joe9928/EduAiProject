@@ -1,14 +1,17 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import authRouter from "./modules/auth/auth.router";
+import { globalErrorHandler } from "./common/middleware/error.middleware";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-//security middlewares
+// Security middleware
 app.use(helmet());
 app.use(
   cors({
@@ -17,11 +20,12 @@ app.use(
   }),
 );
 
-//body parsing
+// Body and cookie parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-//health check endpoint
+// Health check
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -30,7 +34,13 @@ app.get("/health", (req, res) => {
   });
 });
 
-// 404 handler
+// Feature routers
+app.use("/auth", authRouter);
+
+// Global error handler — must be LAST
+app.use(globalErrorHandler);
+
+// 404 handler — catches any unmatched route
 app.use((req, res) => {
   res.status(404).json({
     success: false,
