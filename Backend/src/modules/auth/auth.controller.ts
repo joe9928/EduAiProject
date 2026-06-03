@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "./auth.service";
+import { prisma } from "../../database/prisma.client";
 import {
   sendSuccess,
   setRefreshTokenCookie,
   clearRefreshTokenCookie,
 } from "../../common/utils/response.utils";
 import { UnauthorizedError } from "../../common/errors/app.error";
+import { AuthenticatedRequest } from "../../common/types/request.types";
 
 const authService = new AuthService();
 
@@ -100,10 +102,30 @@ export async function logout(
   }
 }
 
+
 export async function getMe(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
-  res.status(501).json({ message: "Not implemented yet" });
+  try {
+    const authReq = req as AuthenticatedRequest;
+
+    const user = await prisma.user.findUnique({
+      where: { id: authReq.user.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        profileImageUrl: true,
+        createdAt: true,
+      },
+    });
+
+    sendSuccess(res, user);
+  } catch (error) {
+    next(error);
+  }
 }
