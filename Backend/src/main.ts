@@ -4,23 +4,23 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import authRouter from "./modules/auth/auth.router";
+import courseRouter from "./modules/courses/course.router";
 import { globalErrorHandler } from "./common/middleware/error.middleware";
+import { authenticate } from "./common/middleware/jwt.middleware";
+import { validate } from "./common/middleware/validate.middleware";
+import { trackProgressSchema } from "./modules/courses/course.validation";
+import { trackProgress } from "./modules/courses/course.controller";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
-    credentials: true,
-  }),
-);
-
-// Body and cookie parsing
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -34,13 +34,21 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Feature routers
+// ─── Routers ────────────────────────────────────────────────────────────────
 app.use("/auth", authRouter);
+app.use("/courses", courseRouter);
 
-// Global error handler — must be LAST
+// Lesson progress lives outside /courses
+app.post(
+  "/lessons/:lessonId/progress",
+  authenticate,
+  validate(trackProgressSchema),
+  trackProgress,
+);
+
+// ─── Error handling (must be last) ──────────────────────────────────────────
 app.use(globalErrorHandler);
 
-// 404 handler — catches any unmatched route
 app.use((req, res) => {
   res.status(404).json({
     success: false,
