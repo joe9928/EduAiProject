@@ -1,5 +1,6 @@
 import { CourseStatus, LessonType } from "@prisma/client";
-
+import { PaginatedResult } from "../../common/types/pagination.types";
+export type {PaginatedResult} ;
 export interface CreateCourseDto {
   title: string;
   description?: string;
@@ -61,15 +62,6 @@ export interface EnrollResponseDto {
 }
 
 // Reusable pagination wrapper — used across all modules
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 // DTOs for modules and lessons
 export interface CreateModuleDto {
