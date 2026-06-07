@@ -7,6 +7,7 @@ import authRouter from "./modules/auth/auth.router";
 import courseRouter from "./modules/courses/course.router";
 import assignmentRouter from "./modules/assignments/assignment.router"
 import  quizRouter from "./modules/quizzes/quiz.router"
+import  discussionRouter from "./modules/discussions/discussion.router"
 import { globalErrorHandler } from "./common/middleware/error.middleware";
 import { authenticate } from "./common/middleware/jwt.middleware";
 import { validate } from "./common/middleware/validate.middleware";
@@ -42,6 +43,7 @@ app.use("/auth", authRouter);
 app.use("/courses", courseRouter);
 app.use("/", assignmentRouter);
 app.use("/", quizRouter);
+app.use("/", discussionRouter);
 
 // Lesson progress lives outside /courses
 app.post(
