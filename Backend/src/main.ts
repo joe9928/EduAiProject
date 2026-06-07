@@ -3,12 +3,16 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+
+//Routes
 import authRouter from "./modules/auth/auth.router";
 import courseRouter from "./modules/courses/course.router";
 import assignmentRouter from "./modules/assignments/assignment.router"
 import  quizRouter from "./modules/quizzes/quiz.router"
 import  discussionRouter from "./modules/discussions/discussion.router"
 import notificationRouter from "./modules/notifications/notification.router"
+import riskRouter from "./modules/risk/risk.router"
+
 import { globalErrorHandler } from "./common/middleware/error.middleware";
 import { authenticate } from "./common/middleware/jwt.middleware";
 import { validate } from "./common/middleware/validate.middleware";
@@ -46,6 +50,7 @@ app.use("/", assignmentRouter);
 app.use("/", quizRouter);
 app.use("/", discussionRouter);
 app.use("/", notificationRouter);
+app.use("/", riskRouter);
 
 // Lesson progress lives outside /courses
 app.post(
