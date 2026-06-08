@@ -12,6 +12,8 @@ import  quizRouter from "./modules/quizzes/quiz.router"
 import  discussionRouter from "./modules/discussions/discussion.router"
 import notificationRouter from "./modules/notifications/notification.router"
 import riskRouter from "./modules/risk/risk.router"
+import recommendationRouter from "./modules/recommendations/recommendation.router";
+import analyticsRouter from "./modules/analytics/analytics.router";
 
 import { globalErrorHandler } from "./common/middleware/error.middleware";
 import { authenticate } from "./common/middleware/jwt.middleware";
@@ -51,6 +53,8 @@ app.use("/", quizRouter);
 app.use("/", discussionRouter);
 app.use("/", notificationRouter);
 app.use("/", riskRouter);
+app.use("/", recommendationRouter);
+app.use("/", analyticsRouter);
 
 // Lesson progress lives outside /courses
 app.post(
