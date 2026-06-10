@@ -1,0 +1,222 @@
+/* src/app/globals.css */
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ================================================
+   THEME INLINE — Tailwind v4 CSS variable bridge
+   ================================================ */
+@theme inline {
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-secondary:            var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+}
+
+/* ================================================
+   EDULEARN DARK THEME — All oklch, hue 210 family
+   
+   oklch(lightness chroma hue)
+   lightness: 0 = black, 1 = white
+   chroma:    0 = grey, 0.2+ = vivid
+   hue:       210 = blue-cyan (our brand family)
+   ================================================ */
+:root {
+  /* Page foundation */
+  --background:             0.08 0.015 210;   /* #000810 equivalent — deep navy black  */
+  --foreground:             0.93 0.012 210;   /* #E6ECF2 equivalent — ice white        */
+
+  /* Cards & surfaces */
+  --card:                   0.13 0.025 210;   /* #002D3D equivalent — ocean-900        */
+  --card-foreground:        0.93 0.012 210;   /* same as foreground                    */
+  --popover:                0.10 0.020 210;   /* #001B24 equivalent — ocean-950        */
+  --popover-foreground:     0.93 0.012 210;
+
+  /* Primary — the ocean blue */
+  --primary:                0.35 0.075 210;   /* #004E64 equivalent — ocean-700        */
+  --primary-foreground:     0.93 0.012 210;   /* ice on primary backgrounds            */
+
+  /* Secondary — slightly lighter ocean */
+  --secondary:              0.20 0.040 210;   /* #003D54 equivalent — ocean-800        */
+  --secondary-foreground:   0.93 0.012 210;
+
+  /* Muted — subtle backgrounds */
+  --muted:                  0.16 0.030 210;   /* between 900 and 950                   */
+  --muted-foreground:       0.60 0.020 210;   /* ice/60 equivalent                     */
+
+  /* Accent — the spark cyan (our most important brand color) */
+  --accent:                 0.78 0.130 210;   /* #00D4FF equivalent — vivid cyan       */
+  --accent-foreground:      0.08 0.015 210;   /* dark text on cyan backgrounds         */
+
+  /* Semantic */
+  --destructive:            0.577 0.245 27;   /* red — keep shadcn default             */
+  --destructive-foreground: 0.985 0 0;
+
+  /* Borders & inputs */
+  --border:                 0.22 0.030 210;   /* subtle ocean border                   */
+  --input:                  0.16 0.025 210;   /* input background                      */
+  --ring:                   0.78 0.130 210;   /* focus ring = spark cyan               */
+
+  /* Border radius */
+  --radius: 0.625rem;
+
+  /* ---- EduLearn brand scale (full ocean palette) ---- */
+  --ocean-950:  0.08 0.015 210;
+  --ocean-900:  0.13 0.025 210;
+  --ocean-800:  0.18 0.035 210;
+  --ocean-600:  0.42 0.090 210;
+  --ocean-500:  0.50 0.100 210;
+  --ocean-400:  0.60 0.110 210;
+  --ocean-300:  0.70 0.110 210;
+
+  /* ---- Spark cyan scale ---- */
+  --spark:      0.78 0.130 210;
+
+  /* ---- Ice scale ---- */
+  --ice-50:     0.97 0.005 210;
+  --ice-200:    0.82 0.015 210;
+  --ice-300:    0.72 0.020 210;
+
+  /* ---- Sidebar (shadcn sidebar component) ---- */
+  --sidebar:                0.11 0.020 210;
+  --sidebar-foreground:     0.93 0.012 210;
+  --sidebar-primary:        0.78 0.130 210;
+  --sidebar-primary-foreground: 0.08 0.015 210;
+  --sidebar-accent:         0.18 0.035 210;
+  --sidebar-accent-foreground: 0.93 0.012 210;
+  --sidebar-border:         0.22 0.030 210;
+  --sidebar-ring:           0.78 0.130 210;
+}
+
+/* Light mode override — if user ever switches
+   We keep it dark-first since EduLearn is a dark product */
+.light {
+  --background:         0.97 0.005 210;
+  --foreground:         0.10 0.020 210;
+  --card:               0.99 0.003 210;
+  --card-foreground:    0.10 0.020 210;
+  --primary:            0.35 0.075 210;
+  --primary-foreground: 0.97 0.005 210;
+  --muted:              0.92 0.010 210;
+  --muted-foreground:   0.45 0.030 210;
+  --accent:             0.60 0.120 210;
+  --accent-foreground:  0.08 0.015 210;
+  --border:             0.88 0.015 210;
+  --input:              0.90 0.012 210;
+}
+
+/* ================================================
+   ANIMATIONS
+   ================================================ */
+@keyframes scroll-up {
+  0%   { transform: translateY(0);    }
+  100% { transform: translateY(-50%); }
+}
+@keyframes scroll-down {
+  0%   { transform: translateY(-50%); }
+  100% { transform: translateY(0);    }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px);   }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1;   }
+}
+
+.animate-scroll-up-slow   { animation: scroll-up   35s linear infinite; }
+.animate-scroll-up-medium { animation: scroll-up   25s linear infinite; }
+.animate-scroll-down-fast { animation: scroll-down 20s linear infinite; }
+
+.animate-scroll-up-slow:hover,
+.animate-scroll-up-medium:hover,
+.animate-scroll-down-fast:hover {
+  animation-play-state: paused;
+}
+
+/* ================================================
+   BASE
+   ================================================ */
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: oklch(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    font-family: var(--font-body, sans-serif);
+  }
+
+  body {
+    background-color: oklch(var(--background));
+    color:            oklch(var(--foreground));
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar       { width: 6px; }
+  ::-webkit-scrollbar-track { background: oklch(var(--ocean-950)); }
+  ::-webkit-scrollbar-thumb { background: oklch(var(--primary)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(var(--spark)); }
+
+  ::selection {
+    background: oklch(var(--spark) / 0.25);
+    color:      oklch(var(--foreground));
+  }
+}
+
+/* ================================================
+   UTILITIES
+   ================================================ */
+@layer utilities {
+  .glow-spark {
+    box-shadow:
+      0 0 20px oklch(var(--spark) / 0.3),
+      0 0 60px oklch(var(--spark) / 0.1);
+  }
+
+  .glow-ocean {
+    box-shadow:
+      0 0 20px oklch(var(--primary) / 0.5),
+      0 0 60px oklch(var(--primary) / 0.2);
+  }
+
+  .text-gradient-spark {
+    background: linear-gradient(
+      135deg,
+      oklch(var(--spark))     0%,
+      oklch(var(--ocean-300)) 50%,
+      oklch(var(--foreground)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    background:           oklch(var(--ocean-900) / 0.6);
+    backdrop-filter:      blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border:               1px solid oklch(var(--foreground) / 0.08);
+  }
+}
