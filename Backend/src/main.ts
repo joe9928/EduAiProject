@@ -28,10 +28,13 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 app.use(helmet());
+// backend/src/main.ts — update the cors config
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3000'],  // ← explicit fallback, never '*'
   credentials: true,
-}));
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

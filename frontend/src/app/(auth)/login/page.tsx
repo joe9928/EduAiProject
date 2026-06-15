@@ -1,8 +1,9 @@
-// src/app/(auth)/login/page.tsx
+// src/app/(auth)/login/page.tsx — complete file
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   GraduationCap,
   Mail,
@@ -14,10 +15,13 @@ import {
   Users,
   TrendingUp,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { loginUser } from '@/lib/api/auth'
+import { useAuthStore } from '@/store/auth.store'
+import { parseAuthError } from '@/lib/api/errors'
 import TextType from '@/components/reactBits/TextType'
 import { GoogleIcon, GitHubIcon } from '@/components/icons/SocialIcons'
 
-// Phrases cycling on the left panel
 const TYPING_PHRASES = [
   'Learn at your own pace.',
   'AI adapts to you.',
@@ -26,27 +30,66 @@ const TYPING_PHRASES = [
   'Study smarter today.',
 ]
 
-// Floating stat pills shown on left panel
 const STATS = [
   { icon: Users, value: '24K+', label: 'Active Learners' },
   { icon: Sparkles, value: '1.2M+', label: 'AI Recommendations' },
   { icon: TrendingUp, value: '94%', label: 'Completion Rate' },
 ]
 
-export default function LoginPage() {
+// ── Inner component — uses useSearchParams ────────
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const { setAuth } = useAuthStore()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = () => {
-    setIsLoading(true)
-    // wire to API later
-    setTimeout(() => setIsLoading(false), 1500)
-  }
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      toast.error('Please fill in all fields.')
+      return
+    }
 
+    setIsLoading(true)
+
+    try {
+      console.log('1. Calling loginUser...')
+      const response = await loginUser({ email, password })
+      console.log('2. Response:', JSON.stringify(response))
+
+      const { accessToken, user } = response
+      console.log('3. Token:', accessToken?.slice(0, 20))
+      console.log('4. User:', user)
+
+      setAuth(user, accessToken)
+      console.log('5. Auth set in store')
+
+      toast.success(`Welcome back, ${user.firstName}!`)
+      console.log('6. Toast shown')
+
+      const rawFrom = searchParams.get('from')
+      const from = rawFrom ? decodeURIComponent(rawFrom) : '/dashboard'
+      const redirectTo =
+        user.role === 'ADMINISTRATOR' ? '/dashboard/admin' : from
+
+      console.log('7. Redirecting to:', redirectTo)
+
+      // Wait for toast to show
+      setTimeout(() => {
+        console.log('8. setTimeout firing, navigating...')
+        window.location.href = redirectTo
+      }, 1000)
+    } catch (error) {
+      console.error('LOGIN ERROR:', error)
+      toast.error(parseAuthError(error))
+      setIsLoading(false)
+    }
+  }
   return (
     <div className="flex min-h-screen w-full">
-      {/* ─── LEFT PANEL ─────────────────────────────── */}
-      {/* Hidden on mobile, shown md+ */}
+      {/* ── LEFT PANEL ───────────────────────────── */}
       <div
         className="relative hidden w-1/2 flex-col overflow-hidden md:flex"
         style={{
@@ -54,7 +97,6 @@ export default function LoginPage() {
             'linear-gradient(160deg, oklch(var(--ocean-900)) 0%, oklch(var(--ocean-950)) 60%, #000810 100%)',
         }}
       >
-        {/* Ambient glow */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -62,13 +104,12 @@ export default function LoginPage() {
               'radial-gradient(ellipse 80% 60% at 20% 80%, oklch(var(--spark) / 0.08) 0%, transparent 70%)',
           }}
         />
-
-        {/* Top border accent */}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[oklch(var(--spark)/0.4)] to-transparent" />
+
+        {/* Logo */}
 
         {/* Center content */}
         <div className="relative z-10 flex flex-1 flex-col items-start justify-center px-10 pb-10">
-          {/* Badge */}
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[oklch(var(--spark)/0.25)] bg-[oklch(var(--spark)/0.08)] px-4 py-1.5">
             <Sparkles className="h-3.5 w-3.5 text-[oklch(var(--spark))]" />
             <span className="text-xs font-medium tracking-widest text-[oklch(var(--spark))] uppercase">
@@ -76,14 +117,12 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {/* Static headline */}
           <h1 className="font-display mb-3 text-4xl leading-tight font-bold text-[oklch(var(--foreground))] xl:text-5xl">
             The future of
             <br />
             education is
           </h1>
 
-          {/* Animated typewriter line */}
           <div className="font-display mb-8 text-4xl font-bold xl:text-5xl">
             <TextType
               text={TYPING_PHRASES}
@@ -103,7 +142,6 @@ export default function LoginPage() {
             new skills faster than ever before.
           </p>
 
-          {/* Stat pills */}
           <div className="flex flex-wrap gap-3">
             {STATS.map((stat) => {
               const Icon = stat.icon
@@ -129,7 +167,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom grid pattern — decorative */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
@@ -140,16 +177,14 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* ─── RIGHT PANEL — FORM ─────────────────────── */}
+      {/* ── RIGHT PANEL ──────────────────────────── */}
       <div
         className="flex w-full flex-col items-center justify-center px-6 py-12 md:w-1/2"
         style={{ background: 'oklch(var(--background))' }}
       >
-        {/* Mobile logo — only visible when left panel is hidden */}
-        
+        {/* Mobile logo */}
 
         <div className="w-full max-w-sm">
-          {/* Heading */}
           <div className="mb-8">
             <h2 className="font-display text-3xl font-bold text-[oklch(var(--foreground))]">
               Welcome back
@@ -159,7 +194,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Social login buttons */}
+          {/* Social login */}
           <div className="mb-6 grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -186,25 +221,29 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-[oklch(var(--border))]" />
           </div>
 
-          {/* Form fields */}
+          {/* Fields */}
           <div className="flex flex-col gap-4">
-            {/* Email */}
             <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
               <Mail className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />
               <input
                 type="email"
                 placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
                 required
               />
             </div>
 
-            {/* Password */}
             <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
               <Lock className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                 className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
                 required
               />
@@ -222,7 +261,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Remember me + Forgot password */}
+          {/* Remember + forgot */}
           <div className="mt-4 flex items-center justify-between">
             <label className="flex cursor-pointer items-center gap-2">
               <input
@@ -244,7 +283,10 @@ export default function LoginPage() {
           {/* Submit */}
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => {
+              console.log('BUTTON CLICKED')
+              handleSubmit()
+            }}
             disabled={isLoading}
             className="group relative mt-6 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-[oklch(var(--spark))] text-sm font-semibold text-[oklch(var(--ocean-950))] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_32px_oklch(var(--spark)/0.4)] active:scale-[0.98] disabled:opacity-60"
           >
@@ -256,11 +298,9 @@ export default function LoginPage() {
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </>
             )}
-            {/* Shimmer */}
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           </button>
 
-          {/* Sign up link */}
           <p className="mt-6 text-center text-sm text-[oklch(var(--muted-foreground))]">
             Don&apos;t have an account?{' '}
             <Link
@@ -273,5 +313,20 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Suspense wrapper ──────────────────────────────
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[oklch(var(--background))]">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[oklch(var(--spark))] border-t-transparent" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }

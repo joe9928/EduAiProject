@@ -18,6 +18,11 @@ import {
 } from 'lucide-react'
 import TextType from '@/components/reactBits/TextType'
 import { GoogleIcon, GitHubIcon } from '@/components/icons/SocialIcons'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
+import { registerUser } from '@/lib/api/auth'
+import { useAuthStore } from '@/store/auth.store'
+import { parseAuthError } from '@/lib/api/errors'
 
 const TYPING_PHRASES = [
   'Start your journey.',
@@ -76,12 +81,54 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
 
+  const router = useRouter()
+  const { setAuth } = useAuthStore()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [confirmPass, setConfirmPass] = useState('')
+
   const strength = getPasswordStrength(password)
 
-  const handleSubmit = () => {
-    if (!agreedToTerms) return
+  const handleSubmit = async () => {
+    if (!firstName || !lastName || !email || !password) {
+      toast.error('Please fill in all fields.')
+      return
+    }
+
+    if (password !== confirmPass) {
+      toast.error('Passwords do not match.')
+      return
+    }
+
+    if (strength.score < 2) {
+      toast.error('Please choose a stronger password.')
+      return
+    }
+
+    if (!agreedToTerms) {
+      toast.error('Please accept the terms to continue.')
+      return
+    }
+
     setIsLoading(true)
-    setTimeout(() => setIsLoading(false), 1500)
+
+    try {
+      const { accessToken, user } = await registerUser({
+        email,
+        password,
+        firstName,
+        lastName,
+      })
+
+      setAuth(user, accessToken)
+      toast.success(`Welcome to EduLearn, ${user.firstName}!`)
+      router.push('/dashboard')
+    } catch (error) {
+      toast.error(parseAuthError(error))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -107,7 +154,6 @@ export default function RegisterPage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[oklch(var(--spark)/0.4)] to-transparent" />
 
         {/* Logo */}
-       
 
         {/* Center content */}
         <div className="relative z-10 flex flex-1 flex-col items-start justify-center px-10 pb-10">
@@ -185,7 +231,6 @@ export default function RegisterPage() {
         style={{ background: 'oklch(var(--background))' }}
       >
         {/* Mobile logo */}
-        
 
         <div className="w-full max-w-sm">
           {/* Heading */}
@@ -228,27 +273,44 @@ export default function RegisterPage() {
           {/* Form fields */}
           <div className="flex flex-col gap-4">
             {/* Full name */}
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
-              <User className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />
-              <input
-                type="text"
-                placeholder="Full name"
-                className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {/* First name */}
+              <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)]">
+                <User className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />
+                <input
+                  type="text"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
+                  required
+                />
+              </div>
 
+              {/* Last name */}
+              <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)]">
+                <input
+                  type="text"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
+                  required
+                />
+              </div>
+            </div>
             {/* Email */}
             <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
               <Mail className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />
               <input
+                value={email}
+                onChange={(e)=> setEmail(e.target.value)}
                 type="email"
                 placeholder="Email address"
                 className="h-full w-full bg-transparent text-sm text-[oklch(var(--foreground))] placeholder-[oklch(var(--muted-foreground)/0.6)] outline-none"
                 required
               />
             </div>
-
             {/* Password */}
             <div>
               <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
@@ -300,7 +362,6 @@ export default function RegisterPage() {
                 </div>
               )}
             </div>
-
             {/* Confirm password */}
             <div className="flex h-12 items-center gap-3 rounded-xl border border-[oklch(var(--border))] bg-[oklch(var(--card))] px-4 transition-colors duration-200 focus-within:border-[oklch(var(--spark)/0.5)] focus-within:bg-[oklch(var(--foreground)/0.03)]">
               <Lock className="h-4 w-4 shrink-0 text-[oklch(var(--muted-foreground))]" />

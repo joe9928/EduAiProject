@@ -4,7 +4,13 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { gsap } from 'gsap'
-import { Menu, X, GraduationCap, ChevronRight } from 'lucide-react'
+import {
+  Menu, X, GraduationCap,
+  ChevronRight, LayoutDashboard, LogOut,
+} from 'lucide-react'
+import { useAuthStore } from '@/store/auth.store'
+import { logoutUser }   from '@/lib/api/auth'
+import { toast }        from 'sonner'
 
 const NAV_LINKS = [
   { label: 'Courses',  href: '#courses'  },
@@ -19,14 +25,17 @@ export default function Navbar() {
   const navRef        = useRef<HTMLElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Scroll state — switches navbar from transparent to glass
+  const { user, accessToken, clearAuth } = useAuthStore()
+  const isLoggedIn = !!accessToken && !!user
+
+  // Scroll state
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Navbar entrance — slides down after hero content finishes animating
+  // Entrance animation
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -38,11 +47,10 @@ export default function Navbar() {
     return () => ctx.revert()
   }, [])
 
-  // Mobile menu open/close animation
+  // Mobile menu animation
   useEffect(() => {
     const menu = mobileMenuRef.current
     if (!menu) return
-
     if (mobileOpen) {
       gsap.fromTo(
         menu,
@@ -51,15 +59,13 @@ export default function Navbar() {
       )
     } else {
       gsap.to(menu, {
-        height: 0,
-        opacity: 0,
-        duration: 0.25,
-        ease: 'power2.in',
+        height: 0, opacity: 0,
+        duration: 0.25, ease: 'power2.in',
       })
     }
   }, [mobileOpen])
 
-  // Close mobile menu on desktop resize
+  // Close on resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setMobileOpen(false)
@@ -67,6 +73,23 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser()
+    } catch {
+      // Even if API call fails, clear local state
+    } finally {
+      clearAuth()
+      toast.success('Signed out successfully.')
+      window.location.href = '/'
+    }
+  }
+
+  // Get initials for avatar
+  const initials = user
+    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    : ''
 
   return (
     <header
@@ -81,11 +104,11 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2.5">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-spark/80 to-ocean-500 shadow-[0_0_16px_rgba(0,212,255,0.3)] transition-all duration-300 group-hover:shadow-[0_0_24px_rgba(0,212,255,0.5)]">
-            <GraduationCap className="h-4 w-4 text-ocean-950" />
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[oklch(var(--spark)/0.8)] to-[oklch(var(--ocean-500))] shadow-[0_0_16px_oklch(var(--spark)/0.3)] transition-all duration-300 group-hover:shadow-[0_0_24px_oklch(var(--spark)/0.5)]">
+            <GraduationCap className="h-4 w-4 text-[oklch(var(--ocean-950))]" />
           </div>
-          <span className="font-display text-lg font-bold tracking-tight text-ice">
-            Edu<span className="text-spark">Learn</span>
+          <span className="font-display text-lg font-bold tracking-tight text-[oklch(var(--foreground))]">
+            Edu<span className="text-[oklch(var(--spark))]">Learn</span>
           </span>
         </Link>
 
@@ -95,7 +118,7 @@ export default function Navbar() {
             <li key={link.label}>
               <Link
                 href={link.href}
-                className="relative text-sm font-medium text-ice/60 transition-colors duration-200 hover:text-ice after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-spark after:transition-all after:duration-300 hover:after:w-full"
+                className="relative text-sm font-medium text-[oklch(var(--foreground)/0.6)] transition-colors duration-200 hover:text-[oklch(var(--foreground))] after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-[oklch(var(--spark))] after:transition-all after:duration-300 hover:after:w-full"
               >
                 {link.label}
               </Link>
@@ -103,27 +126,60 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Desktop CTAs */}
+        {/* Desktop CTAs — conditional on auth state */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-ice/60 transition-colors duration-200 hover:text-ice"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="group inline-flex items-center gap-1.5 rounded-full bg-spark px-5 py-2 text-sm font-semibold text-ocean-950 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_rgba(0,212,255,0.4)] active:scale-95"
-          >
-            Get Started
-            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
+          {isLoggedIn ? (
+            <>
+              {/* Avatar + name */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[oklch(var(--primary))] to-[oklch(var(--spark)/0.6)] text-xs font-bold text-[oklch(var(--foreground))]">
+                  {initials}
+                </div>
+                <span className="text-sm font-medium text-[oklch(var(--foreground)/0.8)]">
+                  {user?.firstName}
+                </span>
+              </div>
+
+              {/* Go to dashboard */}
+              <Link
+                href="/dashboard"
+                className="group inline-flex items-center gap-1.5 rounded-full border border-[oklch(var(--spark)/0.3)] bg-[oklch(var(--spark)/0.08)] px-5 py-2 text-sm font-semibold text-[oklch(var(--spark))] transition-all duration-300 hover:bg-[oklch(var(--spark)/0.15)]"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Dashboard
+              </Link>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[oklch(var(--border))] text-[oklch(var(--muted-foreground))] transition-colors hover:border-red-500/30 hover:text-red-400"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-medium text-[oklch(var(--foreground)/0.6)] transition-colors duration-200 hover:text-[oklch(var(--foreground))]"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                className="group inline-flex items-center gap-1.5 rounded-full bg-[oklch(var(--spark))] px-5 py-2 text-sm font-semibold text-[oklch(var(--ocean-950))] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_24px_oklch(var(--spark)/0.4)] active:scale-95"
+              >
+                Get Started
+                <ChevronRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen((prev) => !prev)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-ice/70 transition-colors duration-200 hover:border-white/20 hover:text-ice md:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-[oklch(var(--border)/0.5)] text-[oklch(var(--foreground)/0.7)] transition-colors duration-200 hover:border-[oklch(var(--border))] hover:text-[oklch(var(--foreground))] md:hidden"
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
         >
@@ -147,7 +203,7 @@ export default function Navbar() {
                 <Link
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-ice/70 transition-colors duration-200 hover:bg-white/5 hover:text-ice"
+                  className="flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-[oklch(var(--foreground)/0.7)] transition-colors duration-200 hover:bg-[oklch(var(--foreground)/0.05)] hover:text-[oklch(var(--foreground))]"
                 >
                   {link.label}
                   <ChevronRight className="h-3.5 w-3.5 opacity-40" />
@@ -156,22 +212,60 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* Mobile CTAs */}
-          <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4">
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="rounded-full border border-white/15 px-4 py-2.5 text-center text-sm font-medium text-ice/70 transition-colors hover:border-white/25 hover:text-ice"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileOpen(false)}
-              className="rounded-full bg-spark px-4 py-2.5 text-center text-sm font-semibold text-ocean-950 transition-all hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
-            >
-              Get Started Free
-            </Link>
+          {/* Mobile auth CTAs */}
+          <div className="mt-4 flex flex-col gap-3 border-t border-[oklch(var(--border)/0.3)] pt-4">
+            {isLoggedIn ? (
+              <>
+                {/* User info */}
+                <div className="flex items-center gap-3 px-3 py-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[oklch(var(--primary))] to-[oklch(var(--spark)/0.6)] text-xs font-bold text-[oklch(var(--foreground))]">
+                    {initials}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[oklch(var(--foreground))]">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-[oklch(var(--muted-foreground))]">
+                      {user?.email}
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-center gap-2 rounded-full border border-[oklch(var(--spark)/0.3)] bg-[oklch(var(--spark)/0.08)] px-4 py-2.5 text-sm font-semibold text-[oklch(var(--spark))]"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Go to Dashboard
+                </Link>
+
+                <button
+                  onClick={() => { setMobileOpen(false); handleLogout() }}
+                  className="flex items-center justify-center gap-2 rounded-full border border-red-500/20 px-4 py-2.5 text-sm font-medium text-red-400"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-full border border-[oklch(var(--border)/0.5)] px-4 py-2.5 text-center text-sm font-medium text-[oklch(var(--foreground)/0.7)] transition-colors hover:text-[oklch(var(--foreground))]"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-full bg-[oklch(var(--spark))] px-4 py-2.5 text-center text-sm font-semibold text-[oklch(var(--ocean-950))]"
+                >
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -26,13 +26,12 @@ const FOOTER_LINKS: Record<string, FooterLink[]> = {
     { label: 'Features', href: '#features' },
     { label: 'EduAI', href: '#eduai' },
     { label: 'Pricing', href: '#pricing' },
-    { label: 'For Teams', href: '#teams' },
+   
   ],
   Resources: [
     { label: 'Documentation', href: '#docs' },
     { label: 'Blog', href: '#blog' },
     { label: 'Community', href: '#community' },
-    { label: 'Careers', href: '#careers', badge: "We're hiring" },
     { label: 'About', href: '#about' },
   ],
   Legal: [
